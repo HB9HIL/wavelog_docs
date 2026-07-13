@@ -1,9 +1,7 @@
 # Public Punchcard
-
 The Public Punchcard renders a GitHub-style year heatmap of your QSO activity for the current year. It is a standalone, embeddable page served from a station location's _Visitor site_ and can be embedded anywhere on the web (for example in your QRZ.com bio).
 
 ## Usage
-
 The base URL looks like:
 
 `https://[wavelog url]/index.php/visitor/[slug]/punchcard`
@@ -26,17 +24,12 @@ Possible `GET` options currently implemented:
 |----|----|----|
 | `theme` | overrides the global appearance theme. Pass a theme folder name; if that theme's mode is `dark`, the punchcard renders in dark mode | global appearance setting |
 
-
-
 ### Example
-
 Render the punchcard using a dark theme:
 
 <img width="784" height="210" alt="image" src="https://github.com/user-attachments/assets/40ac63cb-89f2-44c7-9396-22234e923a48" />
 
-
 ### Embedding
-
 The page is self-contained and can be placed inside an `<iframe>`:
 
 ```html
@@ -46,7 +39,6 @@ QSO Activity This Year<br />
 ```
 
 ### Notes
-
 * The heatmap always shows the **current year** (server time) and starts the week on **Monday**.
 * Each cell is color-coded by the number of QSOs logged that day; hover a cell to see the date and count.
 * The header shows the total QSO count for the displayed year.

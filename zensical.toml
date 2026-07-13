@@ -94,6 +94,7 @@ nav = [
       "user-guide/features/widgets.md",
       "user-guide/features/last-qsos-widget.md",
       "user-guide/features/on-air-widget.md",
+      "user-guide/features/public-punchcard.md",
       "user-guide/features/static-maps.md",
       "user-guide/features/hams-of-note.md",
       "user-guide/features/qrb-calculator.md",

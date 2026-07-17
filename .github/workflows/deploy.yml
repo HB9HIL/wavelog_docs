@@ -2,7 +2,7 @@ name: Deploy documentation
 on:
   push:
     branches:
-      - master
+      - api_v2
   workflow_dispatch:
 permissions:
   contents: read

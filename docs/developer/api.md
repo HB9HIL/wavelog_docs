@@ -2,6 +2,11 @@
 
 <img width="1307" alt="image" src="https://github.com/wavelog/wavelog/assets/1410708/aaf91999-a2e9-4aba-9f34-d9cb3f16dde9">
 
+!!! tip
+    A newer, resource-oriented **[REST API v2](api-v2/index.md)** is also available
+    (Bearer tokens, granular scopes, standard HTTP verbs). This page documents the
+    original v1 API, which remains fully supported.
+
 The Wavelog API allows you to interact with Wavelog via third-party tools, this might be radios, external logging applications or programs, you can generate two types of keys read-only or read/write depending on your requirements.
 
 At any time you can come to this section and delete keys to remove access.

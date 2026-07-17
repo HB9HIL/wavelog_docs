@@ -151,6 +151,16 @@ nav = [
   ]},
   {"Developer" = [
     "developer/api.md",
+    {"API v2" = [
+      "developer/api-v2/index.md",
+      "developer/api-v2/qso.md",
+      "developer/api-v2/station.md",
+      "developer/api-v2/radio.md",
+      "developer/api-v2/statistic.md",
+      "developer/api-v2/lookup.md",
+      "developer/api-v2/club.md",
+      "developer/api-v2/token.md",
+    ]},
     "developer/development-notes.md",
     "developer/style-guide.md",
     "developer/translations.md",

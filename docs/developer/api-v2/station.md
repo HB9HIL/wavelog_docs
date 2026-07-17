@@ -1,0 +1,150 @@
+# Station
+
+The Station resource manages your **station locations** (logbook profiles) — the
+callsign, grid, DXCC and other location details a QSO is logged against. It reuses
+the same data layer as the web UI, applying the same normalisation and validation.
+
+- **Base path:** `/api/v2/station`
+- **Scopes:** `station:read`, `station:write`, `station:delete`
+
+All operations are scoped to the token owner. A station location belonging to
+another user is treated as *not found*.
+
+!!! note
+    Read the [API v2 overview](index.md) first for authentication, the response
+    envelope and error codes.
+
+## Endpoints
+
+| Verb | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| `GET` | `/api/v2/station` | `station:read` | List all your station locations |
+| `GET` | `/api/v2/station/{id}` | `station:read` | Fetch a single station location |
+| `POST` | `/api/v2/station` | `station:write` | Create a station location |
+| `PATCH` | `/api/v2/station/{id}` | `station:write` | Partial update |
+| `PUT` | `/api/v2/station/{id}` | `station:write` | Full replace (resets omitted fields) |
+| `DELETE` | `/api/v2/station/{id}` | `station:delete` | Delete a station location and all its QSOs |
+
+List endpoints are not paginated — users typically have only a handful of station
+locations.
+
+## The station object
+
+```json
+{
+  "id": 1,
+  "name": "JO30oo / DJ7NT",
+  "callsign": "DJ7NT",
+  "gridsquare": "JO30OO",
+  "city": "Bonn",
+  "dxcc": 230,
+  "country": "FEDERAL REPUBLIC OF GERMANY",
+  "cq": 14,
+  "itu": 28,
+  "state": "",
+  "cnty": "",
+  "iota": "",
+  "sota": "",
+  "wwff": "",
+  "pota": "",
+  "sig": "",
+  "sig_info": "",
+  "power": 100,
+  "active": true
+}
+```
+
+`country` and `active` are read-only. The remaining fields correspond to the
+[writable fields](#writable-fields) below, so a `GET` result round-trips cleanly
+through `PUT`.
+
+## Create a station location
+
+`POST /api/v2/station`
+
+**Required fields:** `name`, `callsign`.
+
+```bash
+curl -X POST https://<WAVELOG_URL>/index.php/api/v2/station \
+     -H "Authorization: Bearer wl2_your_token_here" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "name": "DJ7NT at Home",
+           "callsign": "DJ7NT",
+           "gridsquare": "JO30oo",
+           "city": "Unkel",
+           "dxcc": 230,
+           "cq": 14,
+           "itu": 28,
+           "power": 100
+         }'
+```
+
+- Your **first** station location automatically becomes the active one.
+- On success the API returns `201 Created`, a `Location` header, and the created
+  object in `data`.
+- An identical existing location returns `409 conflict`.
+- An invalid grid locator returns `400 validation_error`.
+
+### Writable fields
+
+| Field | Notes |
+| --- | --- |
+| `name` | Profile name (required on create) |
+| `callsign` | Station callsign (required on create) |
+| `gridsquare` | Maidenhead locator, validated |
+| `city` | QTH / city |
+| `dxcc` | DXCC entity number |
+| `cq` | CQ zone |
+| `itu` | ITU zone |
+| `state` | Primary administrative subdivision |
+| `cnty` | Secondary subdivision (county) — see note below |
+| `iota` | IOTA reference |
+| `sota` | SOTA reference |
+| `wwff` | WWFF reference |
+| `pota` | POTA reference |
+| `sig` | Special interest group |
+| `sig_info` | Special interest group info |
+| `power` | Default TX power in watts |
+
+!!! note
+    External-service credentials (QRZ, HRDLog, ClubLog, OQRS, webADIF, eQSL) are
+    **not** exposed through the API and keep their defaults on create.
+
+!!! note
+    `cnty` (county) is only stored for DXCC entities that have ADIF secondary
+    subdivisions. For any other DXCC entity the county is cleared automatically,
+    mirroring the web UI.
+
+## Update a station location
+
+`PATCH /api/v2/station/{id}` — partial update, only the fields you send change.
+
+`PUT /api/v2/station/{id}` — full replace: `name` and `callsign` must be present,
+and every omitted optional field is reset to its default.
+
+```bash
+curl -X PATCH https://<WAVELOG_URL>/index.php/api/v2/station/1 \
+     -H "Authorization: Bearer wl2_your_token_here" \
+     -H "Content-Type: application/json" \
+     -d '{ "power": 50, "city": "Bonn" }'
+```
+
+The updated station object is returned in `data`.
+
+## Delete a station location
+
+`DELETE /api/v2/station/{id}`
+
+!!! warning
+    This is **destructive**. Deleting a station location also deletes **all of its
+    QSOs** and their associated QSL/eQSL data, exactly like the web UI.
+
+- The **active** station location cannot be deleted and returns `409 conflict`.
+  Activate another location first.
+- On success the API returns `204 No Content`.
+
+```bash
+curl -X DELETE https://<WAVELOG_URL>/index.php/api/v2/station/2 \
+     -H "Authorization: Bearer wl2_your_token_here"
+```

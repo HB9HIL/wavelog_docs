@@ -16,14 +16,14 @@ token owner's own logbook. The callsign lookup is the v2 equivalent of the v1
 
 | Verb | Path | Scope | Purpose |
 | --- | --- | --- | --- |
-| `GET` | `/api/v2/lookup/{callsign}` | `lookup:read` | Look up a callsign (path form) |
-| `GET` | `/api/v2/lookup?callsign=…` | `lookup:read` | Look up a callsign (query form) |
+| `GET` | `/api/v2/lookup?callsign=…` | `lookup:read` | Look up a callsign |
 | `GET` | `/api/v2/lookup?grid=…` | `lookup:read` | Look up a gridsquare's worked/confirmed status |
 
-!!! tip
-    Use the **`?callsign=` query form** for callsigns containing a `/` (portable or
-    DXCC-prefix calls like `DL1ABC/P` or `W/DL1ABC`). They cannot be passed as a path
-    segment because most webservers reject encoded slashes (`%2F`).
+The callsign is always passed as a query parameter, never as a path segment —
+`/api/v2/lookup/DL1ABC` returns `405 method_not_allowed`. This keeps callsigns
+containing a `/` (portable or DXCC-prefix calls like `DL1ABC/P` or `W/DL1ABC`)
+working, which a path segment cannot: most webservers reject encoded slashes
+(`%2F`).
 
 `GET /api/v2/lookup` with neither `callsign` nor `grid` returns `400 validation_error`.
 
@@ -33,7 +33,8 @@ token owner's own logbook. The callsign lookup is the v2 equivalent of the v1
 
 | Parameter | Default | Notes |
 | --- | --- | --- |
-| `detail` | `full` | `full` or `basic` (see below) |
+| `callsign` | — | The callsign to look up (required for this form) |
+| `detail` | `basic` | `full` or `basic` (see below) |
 | `band` | — | Band for the per-band worked/confirmed flags (e.g. `20m`) |
 | `mode` | — | Mode for the per-mode worked/confirmed flags (e.g. `FT8`) |
 | `callbook` | — | `true` to include external callbook data (an extra HTTP lookup) |
@@ -41,14 +42,14 @@ token owner's own logbook. The callsign lookup is the v2 equivalent of the v1
 
 ## Detail levels
 
-### `full` (default)
+### `full`
 
 Everything `basic` returns, plus the per-band/mode worked and confirmed flags, the
 DXCC confirmation state and — when `callbook=true` — callbook data. This mirrors the
 v1 `private_lookup` endpoint.
 
 ```bash
-curl "https://<WAVELOG_URL>/index.php/api/v2/lookup/DL1ABC?band=20m&mode=FT8" \
+curl "https://<WAVELOG_URL>/index.php/api/v2/lookup?callsign=DL1ABC&detail=full&band=20m&mode=FT8" \
      -H "Authorization: Bearer wl2_your_token_here"
 ```
 
@@ -94,14 +95,14 @@ When the call has been worked before, the owner's stored `name`, `gridsquare`,
 flags reflect the requested `band`/`mode`. `dxcc_ituz` is only present when the
 entity has a known ITU zone; `callbook` is only present with `callbook=true`.
 
-### `basic`
+### `basic` (default)
 
 DXCC derivation plus the owner's grid/name if the call was worked before — no
 per-band/mode history. This mirrors the v1 `lookup` endpoint used by the
 DXClusterAPI and is the cheaper call.
 
 ```bash
-curl "https://<WAVELOG_URL>/index.php/api/v2/lookup/DL1ABC?detail=basic" \
+curl "https://<WAVELOG_URL>/index.php/api/v2/lookup?callsign=DL1ABC&detail=basic" \
      -H "Authorization: Bearer wl2_your_token_here"
 ```
 

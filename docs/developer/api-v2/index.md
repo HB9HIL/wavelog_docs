@@ -212,7 +212,7 @@ Errors use an `error` envelope and a matching HTTP status code:
 | 404 | `not_found` | Unknown resource, or item id not found / not owned |
 | 405 | `method_not_allowed` | Verb not supported by this resource (see `Allow` header) |
 | 409 | `conflict` | Duplicate, or a state that forbids the action |
-| 429 | `rate_limited` | Rate limit exceeded (see `details.retry_after`, in seconds) |
+| 429 | `rate_limited` | [Rate limit](#rate-limiting) exceeded (see `details.retry_after`, in seconds) |
 | 500 | `internal_error` | Unexpected server-side error |
 
 ### Pagination
@@ -258,10 +258,67 @@ until `page` reaches `total_pages`). You never need to probe for an empty page.
 
 ### Rate limiting
 
-Instance owners may configure per-resource, per-token rate limits. When active and
-exceeded, the API returns `429 rate_limited` and includes `details.retry_after`
-(seconds to wait). If no limit is configured, no throttling is applied — but please
-still call the API only when you actually have new data to send or fetch.
+Rate limiting is **opt-in**: it is inactive until the instance owner configures it,
+and it uses a sliding window. When a limit is exceeded, the API returns
+`429 rate_limited` with `details.retry_after` (seconds to wait). If no limit is
+configured, no throttling is applied — but please still call the API only when you
+actually have new data to send or fetch.
+
+#### Buckets
+
+Every v2 request passes through up to two independent counters:
+
+| Bucket | Checked | Counted per | Purpose |
+| --- | --- | --- | --- |
+| `api_v2_auth` | before authentication | client IP address | Slows down brute-force attempts against the token keyspace |
+| `api_v2_<resource>` | after successful authentication | token | Normal usage limit, e.g. `api_v2_qso`, `api_v2_station` |
+
+A client with a valid token passes through both. A client with an invalid token
+never gets past the first — which is the point: a rejected token never reaches the
+per-token bucket, so without `api_v2_auth` the token keyspace could be probed at
+full speed.
+
+`api_v2_auth` is deliberately **not** per resource. If it were, the limit could be
+sidestepped by rotating the resource in the URL (`/qso`, `/station`, `/radio`, …).
+
+#### Configuration
+
+Limits live in `application/config/config.php` (Docker installations:
+`application/config/docker/config.php`). Each entry sets a maximum number of
+`requests` within a `window` in seconds:
+
+```php
+$config['api_rate_limits'] = [
+    // API v2 — bucket names carry the "api_v2_" prefix
+    'api_v2_auth'      => ['requests' => 10,  'window' => 120],
+    'api_v2_qso'       => ['requests' => 120, 'window' => 60],
+    'api_v2_lookup'    => ['requests' => 60,  'window' => 60],
+    'api_v2_statistic' => ['requests' => 30,  'window' => 60],
+
+    // v1 endpoints keep their bare method names
+    'private_lookup'   => ['requests' => 60,  'window' => 60],
+
+    // applies to every bucket not listed above
+    'default'          => ['requests' => 60,  'window' => 60],
+];
+```
+
+!!! warning "Without `default`, unlisted buckets are unlimited"
+    Buckets are looked up by exact name, then fall back to `default`. If neither
+    matches, **no limit is applied at all** to that bucket.
+
+    This is easy to get wrong: an instance that configures only
+    `'private_lookup'` has rate limiting switched on, yet every single v2
+    endpoint — including `api_v2_auth` — remains unthrottled.
+
+    Either set a `default`, or list `api_v2_auth` explicitly.
+
+v1 and v2 share the same config array but never collide: v1 buckets are named
+after the API method (`lookup`, `private_lookup`, `qso`), v2 buckets always carry
+the `api_v2_` prefix. Both are configured independently.
+
+To disable rate limiting entirely, set `$config['api_rate_limits'] = null;` or
+leave it commented out.
 
 ### CORS
 

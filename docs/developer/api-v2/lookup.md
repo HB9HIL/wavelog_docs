@@ -18,6 +18,7 @@ token owner's own logbook. The callsign lookup is the v2 equivalent of the v1
 | --- | --- | --- | --- |
 | `GET` | `/api/v2/lookup?callsign=…` | `lookup:read` | Look up a callsign |
 | `GET` | `/api/v2/lookup?grid=…` | `lookup:read` | Look up a gridsquare's worked/confirmed status |
+| `GET` | `/api/v2/lookup?grid=all` | `lookup:read` | List all worked gridsquares |
 
 The callsign is always passed as a query parameter, never as a path segment —
 `/api/v2/lookup/DL1ABC` returns `405 method_not_allowed`. This keeps callsigns
@@ -162,3 +163,32 @@ curl "https://<WAVELOG_URL>/index.php/api/v2/lookup?grid=JN47&cnfm=lotw" \
 | `Found` | Worked (returned when no `cnfm` was requested) |
 | `Worked` | Worked but not confirmed via the requested `cnfm` source |
 | `Confirmed` | Confirmed via the requested `cnfm` source |
+
+## All worked grids
+
+`GET /api/v2/lookup?grid=all` — instead of checking a single gridsquare, return
+every gridsquare worked in your logbook. (Replaces the v1
+`logbook_get_worked_grids` endpoint.)
+
+| Parameter | Notes |
+| --- | --- |
+| `grid` | The literal value `all` (required for this form) |
+| `band` | Optional band filter, e.g. `20m`; `SAT` restricts to satellite QSOs |
+| `cnfm` | Optional confirmation source: `qsl`, `lotw` or `eqsl` — anything else returns `400 validation_error` |
+| `logbook_id` | Optional: restrict to one owned logbook (`403 forbidden` for a foreign id) |
+
+```bash
+curl "https://<WAVELOG_URL>/index.php/api/v2/lookup?grid=all&band=20m" \
+     -H "Authorization: Bearer wl2_your_token_here"
+```
+
+```json
+{
+  "data": { "grids": ["JN47", "JO30"], "count": 2 },
+  "meta": { "type": "worked_grids", "band": "20m", "cnfm": null }
+}
+```
+
+Grids from `VUCC_GRIDS` fields are included. All values are uppercased and
+truncated to the first four characters, so the list contains each worked field
+exactly once.

@@ -34,9 +34,16 @@ not belong to one of them is treated as *not found*.
 
 ## Frequencies
 
-Frequencies (`freq`, `freq_rx`) are expressed in **Hz** everywhere — in create
-bodies, update bodies and in responses. You may also pass a value with a unit
-suffix, e.g. `"7.0475M"`, which is parsed to `7047500` Hz.
+Frequencies (`freq`, `freq_rx`) are expressed in **Hz** throughout the JSON API —
+in create bodies (single and bulk), in update bodies and in responses. You may
+also pass a value with a unit suffix, e.g. `"7.0475M"`, which is parsed to
+`7047500` Hz.
+
+!!! note "ADIF payloads are MHz"
+    The one exception is an ADIF import (`import_type=adif`). Frequencies inside
+    the ADIF payload are read as **MHz**, because that is what the ADIF standard
+    prescribes. This applies to the ADIF document only — the surrounding JSON
+    fields are unaffected.
 
 ## The QSO object
 

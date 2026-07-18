@@ -22,8 +22,13 @@ another user is treated as *not found*.
 | `GET` | `/api/v2/station/{id}` | `station:read` | Fetch a single station location |
 | `POST` | `/api/v2/station` | `station:write` | Create a station location |
 | `PATCH` | `/api/v2/station/{id}` | `station:write` | Partial update |
-| `PUT` | `/api/v2/station/{id}` | `station:write` | Full replace (resets omitted fields) |
 | `DELETE` | `/api/v2/station/{id}` | `station:delete` | Delete a station location and all its QSOs |
+
+!!! note "There is no `PUT`"
+    Updates are always partial, for the same reason as on [QSO](qso.md): Wavelog
+    is the source of truth, and a full replace would let a client blank fields it
+    never knew existed. To overwrite a station location completely, send every
+    field explicitly in a `PATCH`.
 
 List endpoints are not paginated — users typically have only a handful of station
 locations.
@@ -55,8 +60,8 @@ locations.
 ```
 
 `country` and `active` are read-only. The remaining fields correspond to the
-[writable fields](#writable-fields) below, so a `GET` result round-trips cleanly
-through `PUT`.
+[writable fields](#writable-fields) below, so a `GET` result can be sent straight
+back through `PATCH`.
 
 ## Create a station location
 
@@ -119,9 +124,7 @@ curl -X POST https://<WAVELOG_URL>/index.php/api/v2/station \
 ## Update a station location
 
 `PATCH /api/v2/station/{id}` — partial update, only the fields you send change.
-
-`PUT /api/v2/station/{id}` — full replace: `name` and `callsign` must be present,
-and every omitted optional field is reset to its default.
+Anything you omit keeps its stored value.
 
 ```bash
 curl -X PATCH https://<WAVELOG_URL>/index.php/api/v2/station/1 \

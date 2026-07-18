@@ -14,7 +14,7 @@ can be used at the same time.
 | Aspect | v1 (`/api/…`) | v2 (`/api/v2/…`) |
 | --- | --- | --- |
 | URL style | RPC — the operation is the method name (`/api/qso`) | REST — a resource path plus an HTTP verb (`POST /api/v2/qso`) |
-| HTTP verbs | mostly `POST` | `GET`, `POST`, `PUT`, `PATCH`, `DELETE` |
+| HTTP verbs | mostly `POST` | `GET`, `POST`, `PATCH`, `DELETE` |
 | Authentication | key inside the JSON body / URL | `Authorization: Bearer <token>` header |
 | Token format | `wl…` | `wl2_…` |
 | Token storage | plaintext in the database | only a SHA-256 **hash** is stored |
@@ -92,7 +92,7 @@ Permissions are **granular** and follow the pattern `<resource>:<action>`:
 | Action | Granted for | Required by |
 | --- | --- | --- |
 | `read` | reading data | `GET` requests |
-| `write` | creating and updating data | `POST`, `PUT`, `PATCH` requests |
+| `write` | creating and updating data | `POST`, `PATCH` requests |
 | `delete` | deleting data | `DELETE` requests |
 
 Scopes are independent, so you can mint a read-only token, a write-only token, or
@@ -123,20 +123,17 @@ its own metadata.
 | `GET` | `/api/v2/<resource>/<id>` | Fetch a single item |
 | `POST` | `/api/v2/<resource>` | Create an item |
 | `PATCH` | `/api/v2/<resource>/<id>` | **Partial** update — only the fields you send are changed |
-| `PUT` | `/api/v2/<resource>/<id>` | **Full** replacement — omitted optional fields are reset to their defaults |
 | `DELETE` | `/api/v2/<resource>/<id>` | Delete an item |
 
-!!! tip
-    Prefer `PATCH` for everyday edits. Use `PUT` only when you deliberately want
-    the stored item to match your payload exactly, because `PUT` resets every
-    editable field you leave out.
-
-`PUT` is offered only where a full replace is safe. [QSO](qso.md) deliberately
-has **no `PUT`** — see the note on that page.
+!!! note "The API has no `PUT`"
+    Updates are always partial. Wavelog is the source of truth for your data, and
+    a full replace would let a client blank fields it never knew existed — every
+    field added in a future release would silently be wiped by older clients. To
+    overwrite an item completely, send every field explicitly in a `PATCH`.
 
 Not every resource implements every verb (for example, [Radio](radio.md) has no
-`PATCH`/`PUT`, and [Statistic](statistic.md) is read-only). An unsupported verb
-returns `405 method_not_allowed` with an `Allow` header listing what is accepted.
+`PATCH`, and [Statistic](statistic.md) is read-only). An unsupported verb
+returns `405 method_not_allowed`.
 
 ### Request bodies
 
@@ -155,7 +152,7 @@ context:
 | --- | --- |
 | `timestamp` | UTC response timestamp (ISO-8601, e.g. `2026-07-18T12:34:56+00:00`) |
 | `resource` | API v2 resource segment (`qso`, `station`, `statistic`, ...; `meta` for `/api/v2` and `/api/v2/status`) |
-| `method` | HTTP method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) |
+| `method` | HTTP method (`GET`, `POST`, `PATCH`, `DELETE`) |
 
 Resource-specific metadata (pagination, lookup detail, statistic profile, ...)
 is added to the same `meta` object.

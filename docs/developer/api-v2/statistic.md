@@ -93,11 +93,11 @@ Every row carries two framing numbers next to the per-type counts:
 | `qsos` | QSOs the counters were drawn from, after all filters |
 | `confirmed` | QSOs confirmed by **at least one** of the requested types |
 
-`confirmed` is deliberately *not* the sum of the per-type counts: a QSO confirmed
-via both LoTW and eQSL is one confirmed QSO, not two. So
-`confirmed <= lotw + eqsl + …` while `confirmed <= qsos` always holds. Reading a
-row as "68 QSOs on 17m, 50 of them confirmed, 36 of those via LoTW" is the
-intended interpretation.
+!!! note "Clarification about `confirmed`"
+    `confirmed` is deliberately **not** the sum of the per-type counts: a QSO confirmed via both 
+    LoTW and eQSL is one confirmed QSO, not two. So `confirmed <= lotw + eqsl + …` while 
+    `confirmed <= qsos` always holds. Reading a row as "68 QSOs on 17m, 50 of them confirmed, 
+    36 of those via LoTW" is the intended interpretation.
 
 Groups without a single confirmation are still listed — a band with QSOs and no
 confirmations is usually the interesting one. The `filters` object echoes back the

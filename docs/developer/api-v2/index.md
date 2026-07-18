@@ -144,19 +144,43 @@ returns `405 method_not_allowed` with an `Allow` header listing what is accepted
 
 ### Success responses
 
-Successful responses use a slim envelope. The payload is always under `data`;
-list endpoints add a `meta` block:
+Successful responses use a slim envelope. The payload is always under `data`.
+Every JSON success response also includes a `meta` block with common request
+context:
+
+| Field | Meaning |
+| --- | --- |
+| `timestamp` | UTC response timestamp (ISO-8601, e.g. `2026-07-18T12:34:56+00:00`) |
+| `resource` | API v2 resource segment (`qso`, `station`, `statistic`, ...; `meta` for `/api/v2` and `/api/v2/status`) |
+| `method` | HTTP method (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`) |
+
+Resource-specific metadata (pagination, lookup detail, statistic profile, ...)
+is added to the same `meta` object.
+
+Examples:
 
 ```json
 {
-  "data": { "id": 42, "call": "N9EAT" }
+  "data": { "id": 42, "call": "N9EAT" },
+  "meta": {
+    "timestamp": "2026-07-18T12:34:56+00:00",
+    "resource": "qso",
+    "method": "GET"
+  }
 }
 ```
 
 ```json
 {
   "data": [ { "id": 42 }, { "id": 43 } ],
-  "meta": { "page": 1, "per_page": 50, "count": 2 }
+  "meta": {
+    "timestamp": "2026-07-18T12:34:56+00:00",
+    "resource": "qso",
+    "method": "GET",
+    "page": 1,
+    "per_page": 50,
+    "count": 2
+  }
 }
 ```
 
@@ -201,7 +225,7 @@ pagination through query parameters:
 | `page` | `1` | 1-based page number |
 | `per_page` | `50` | Maximum `5000` (see the [QSO](qso.md#list-qsos) resource for per-format defaults) |
 
-The `meta` block reports the pagination state:
+The pagination fields are part of `meta` and report the page state:
 
 | Field | Meaning |
 | --- | --- |
@@ -215,7 +239,17 @@ The `meta` block reports the pagination state:
 ```json
 {
   "data": [ { "id": 42 } ],
-  "meta": { "page": 1, "per_page": 50, "count": 50, "total": 237, "total_pages": 5, "has_more": true }
+  "meta": {
+    "timestamp": "2026-07-18T12:34:56+00:00",
+    "resource": "qso",
+    "method": "GET",
+    "page": 1,
+    "per_page": 50,
+    "count": 50,
+    "total": 237,
+    "total_pages": 5,
+    "has_more": true
+  }
 }
 ```
 
@@ -246,7 +280,14 @@ curl https://<WAVELOG_URL>/index.php/api/v2/status
 ```
 
 ```json
-{ "data": { "name": "Wavelog API", "status": "ok" } }
+{
+  "data": { "name": "Wavelog API", "status": "ok" },
+  "meta": {
+    "timestamp": "2026-07-18T12:34:56+00:00",
+    "resource": "status",
+    "method": "GET"
+  }
+}
 ```
 
 ## Quickstart

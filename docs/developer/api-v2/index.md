@@ -131,6 +131,9 @@ its own metadata.
     the stored item to match your payload exactly, because `PUT` resets every
     editable field you leave out.
 
+`PUT` is offered only where a full replace is safe. [QSO](qso.md) deliberately
+has **no `PUT`** — see the note on that page.
+
 Not every resource implements every verb (for example, [Radio](radio.md) has no
 `PATCH`/`PUT`, and [Statistic](statistic.md) is read-only). An unsupported verb
 returns `405 method_not_allowed` with an `Allow` header listing what is accepted.

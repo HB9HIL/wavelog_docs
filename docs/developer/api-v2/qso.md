@@ -23,8 +23,14 @@ not belong to one of them is treated as *not found*.
 | `GET` | `/api/v2/qso/{id}` | `qso:read` | Fetch a single QSO |
 | `POST` | `/api/v2/qso` | `qso:write` | Create a QSO |
 | `PATCH` | `/api/v2/qso/{id}` | `qso:write` | Partial update |
-| `PUT` | `/api/v2/qso/{id}` | `qso:write` | Full replace (resets omitted fields) |
 | `DELETE` | `/api/v2/qso/{id}` | `qso:delete` | Delete a QSO |
+
+!!! note "There is no `PUT` on QSOs"
+    Updates are always partial. Wavelog is the source of truth for your log, and
+    a full replace would let a client blank fields it never knew existed — every
+    ADIF field added in a future release would silently be wiped by older
+    clients. If you want to overwrite a QSO completely, send every field
+    explicitly in a `PATCH`.
 
 ## Frequencies
 
@@ -189,7 +195,7 @@ For a single `json` QSO, send the fields at the top level (not an ADIF string).
 Common optional fields include `freq`, `freq_rx`, `time_off`, `rst_sent`,
 `rst_rcvd`, `gridsquare`, `name`, `comment`, and any other valid ADIF field name
 (lowercase). See [Editable fields](#editable-fields) for the fields that `PATCH`
-and `PUT` recognise explicitly.
+recognises explicitly.
 
 ```bash
 curl -X POST https://<WAVELOG_URL>/index.php/api/v2/qso \
@@ -318,9 +324,7 @@ If nothing could be imported and only hard errors occurred, the API returns
 ## Update a QSO
 
 `PATCH /api/v2/qso/{id}` — partial update, only the fields you send are changed.
-
-`PUT /api/v2/qso/{id}` — full replace: the required create fields must be present,
-and **every editable field you omit is reset to its default**.
+Anything you omit keeps its stored value.
 
 ```bash
 curl -X PATCH https://<WAVELOG_URL>/index.php/api/v2/qso/4886 \
@@ -329,7 +333,7 @@ curl -X PATCH https://<WAVELOG_URL>/index.php/api/v2/qso/4886 \
      -d '{ "comment": "Nice ragchew", "rst_rcvd": "59" }'
 ```
 
-Both verbs return the fresh state of the QSO in `data`.
+The response returns the fresh state of the QSO in `data`.
 
 Notes:
 
@@ -340,7 +344,7 @@ Notes:
 
 ### Editable fields
 
-`PATCH`/`PUT` accept the following fields (in addition to `qso_date`/`time_on`,
+`PATCH` accepts the following fields (in addition to `qso_date`/`time_on`,
 `time_off`, `mode`, `freq`/`freq_rx` and `station_profile_id`, which are handled
 specially):
 

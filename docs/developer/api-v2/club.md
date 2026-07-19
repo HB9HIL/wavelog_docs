@@ -25,7 +25,14 @@ so the caller must:
 - use a token created for the clubstation by a member (owner ≠ creator), and
 - that member must hold permission level **9** (officer) on the clubstation.
 
-Any other token — including a personal token — returns `403 forbidden`.
+Any other token — including a personal token — is refused: a member below
+officer level gets `403 insufficient_club_permission`, a personal token
+`403 forbidden`. See [Clubstations](clubstation.md) for the permission levels.
+
+!!! warning
+    The response contains every member's **email address** alongside their name
+    and locator. That is why the endpoint stays officer-only, and why a token
+    with `club:read` should not be handed to a third-party tool lightly.
 
 ```bash
 curl "https://<WAVELOG_URL>/index.php/api/v2/club" \

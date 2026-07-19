@@ -21,7 +21,8 @@ token owner's own logbook. The callsign lookup is the v2 equivalent of the v1
 | `GET` | `/api/v2/lookup?grid=all` | `lookup:read` | List all worked gridsquares |
 
 The callsign is always passed as a query parameter, never as a path segment —
-`/api/v2/lookup/DL1ABC` returns `405 method_not_allowed`. This keeps callsigns
+`/api/v2/lookup/DL1ABC` returns `404 not_found`, because Lookup has no
+addressable single items. This keeps callsigns
 containing a `/` (portable or DXCC-prefix calls like `DL1ABC/P` or `W/DL1ABC`)
 working, which a path segment cannot: most webservers reject encoded slashes
 (`%2F`).
@@ -143,7 +144,7 @@ logbook? (Replaces the v1 `logbook_check_grid` endpoint.)
 | --- | --- |
 | `grid` | The gridsquare to look up (required for this form) |
 | `band` | Optional band filter, e.g. `20m` |
-| `cnfm` | Optional confirmation source: `qsl`, `lotw` or `eqsl` |
+| `cnfm` | Optional confirmation source: `qsl`, `lotw` or `eqsl` — anything else returns `400 validation_error` |
 | `logbook_id` | Optional: restrict to one owned logbook (`403 forbidden` for a foreign id) |
 
 ```bash
@@ -192,3 +193,18 @@ curl "https://<WAVELOG_URL>/index.php/api/v2/lookup?grid=all&band=20m" \
 Grids from `VUCC_GRIDS` fields are included. All values are uppercased and
 truncated to the first four characters, so the list contains each worked field
 exactly once.
+
+## Clubstation tokens
+
+A lookup answers "have I worked this before" out of the logbook, so it follows
+the same boundary the [QSO](qso.md) resource does. For a
+[clubstation](clubstation.md) token below officer level only the acting member's
+own QSOs are considered:
+
+- `?callsign=` reports `workedBefore: false` (and `call_worked: false` with
+  `detail=full`) when the only match belongs to another operator, and returns no
+  name, QTH or locator from it.
+- `?grid=` and `?grid=all` ignore other operators' QSOs.
+
+An officer sees the whole club logbook. DXCC data is derived from the callsign
+itself and is never restricted.

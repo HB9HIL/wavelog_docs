@@ -118,8 +118,12 @@ curl -X POST https://<WAVELOG_URL>/index.php/api/v2/radio \
 ### Clubstation operators
 
 When the token belongs to a club member (the token owner differs from its creator),
-the radio state is recorded under the club account as operator, mirroring the
-legacy radio endpoint.
+the radio state is recorded under the club account with the acting member as
+operator, mirroring the legacy radio endpoint.
+
+Each member therefore has their own set of rigs inside the shared club account.
+Below officer level, listing, reading and deleting are scoped to those: another
+member's radio returns `404 not_found`. See [Clubstations](clubstation.md).
 
 ## Delete a radio
 

@@ -90,6 +90,12 @@ Filters (all optional):
 | `qsl_filter` | — | Comma list of `lotw`, `qsl`, `eqsl`, `qrz`, `clublog` (OR-combined) |
 | `since_id` | `0` | Only QSOs whose primary key is greater than this |
 
+!!! note "Clubstation tokens see only their own QSOs"
+    For a [clubstation](clubstation.md) token below officer level the list is
+    restricted to QSOs the acting member logged themselves, and `meta.total`
+    counts only those. The ADIF export runs the same query, so `format=adif`
+    returns exactly the same set. An officer sees every operator's QSO.
+
 Pagination and rendering:
 
 | Parameter | Default | Notes |
@@ -171,7 +177,9 @@ curl https://<WAVELOG_URL>/index.php/api/v2/qso/4886 \
      -H "Authorization: Bearer wl2_your_token_here"
 ```
 
-Returns `404 not_found` if the QSO does not exist or is not owned by the token.
+Returns `404 not_found` if the QSO does not exist or is not owned by the token —
+and, for a [clubstation](clubstation.md) token below officer level, if it was
+logged by a different operator.
 
 ## Create a QSO
 
@@ -324,9 +332,12 @@ the parsed count:
 If nothing could be imported and only hard errors occurred, the API returns
 `400 validation_error` with the details.
 
-!!! tip
-    Clubstation tokens automatically log under the acting member's callsign rather
-    than the shared club call, matching the v1 import behaviour.
+!!! tip "Clubstation tokens"
+    A clubstation token logs under the acting member's callsign rather than the
+    shared club call. Below officer level the `operator` field is **overwritten**,
+    not just filled in, and the QSO list, the ADIF export and every per-QSO
+    operation are restricted to that member's own contacts. See
+    [Clubstations](clubstation.md).
 
 ## Update a QSO
 
@@ -348,6 +359,8 @@ Notes:
   `time_on` and is never earlier than it.
 - Passing `station_profile_id` moves the QSO to another of your station locations
   (ownership is verified).
+- With a [clubstation](clubstation.md) token below officer level you may only
+  edit QSOs you logged yourself; another operator's QSO returns `404 not_found`.
 
 ### Editable fields
 
@@ -376,3 +389,6 @@ curl -X DELETE https://<WAVELOG_URL>/index.php/api/v2/qso/4886 \
 
 Deletion runs the full teardown (OQRS entries, QSL/eQSL images, caches), exactly
 like deleting from the web UI. On success the API returns `204 No Content`.
+
+As with `PATCH`, a [clubstation](clubstation.md) token below officer level may
+only delete its own QSOs; another operator's returns `404 not_found`.

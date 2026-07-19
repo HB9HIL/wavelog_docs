@@ -29,6 +29,16 @@ you request the topic on its own or as part of `full`
 (e.g. `$.data.qso.total`). The response `meta` reports the requested `profile` and
 whether the token owner is an `admin`.
 
+!!! note "Clubstation tokens report club-wide figures"
+    Unlike the [QSO](qso.md) resource, the counters are **not** narrowed to the
+    acting member: every [clubstation](clubstation.md) token sees the whole
+    club's numbers, at any permission level. The values are aggregates rather
+    than QSO data.
+
+    A consequence worth knowing: for a member below officer level
+    `$.data.qso.total` will be larger than the `meta.total` of
+    `GET /api/v2/qso`.
+
 ## Topics
 
 ### `qso` (default)

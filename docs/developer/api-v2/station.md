@@ -116,6 +116,13 @@ curl -X POST https://<WAVELOG_URL>/index.php/api/v2/station \
     External-service credentials (QRZ, HRDLog, ClubLog, OQRS, webADIF, eQSL) are
     **not** exposed through the API and keep their defaults on create.
 
+!!! warning "Clubstation tokens need officer level to write"
+    Station locations are shared club infrastructure, and deleting one removes
+    all of its QSOs with it. Creating, updating and deleting them therefore
+    requires permission level 9; reading stays open to every member. A lower
+    level is refused with `403 insufficient_club_permission`. See
+    [Clubstations](clubstation.md).
+
 !!! note
     `cnty` (county) is only stored for DXCC entities that have ADIF secondary
     subdivisions. For any other DXCC entity the county is cleared automatically,

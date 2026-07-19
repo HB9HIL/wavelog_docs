@@ -33,6 +33,17 @@ https://<your-wavelog-host>/index.php/api/v2/<resource>[/<id>]
   `lookup`, `club`, `token`).
 - `<id>` is the numeric primary key of a single item, where applicable.
 
+That is the **complete** URL space: a path with more than those two segments is
+not a URL that exists and returns `404 not_found`, rather than being answered by
+ignoring the surplus. A trailing slash is fine.
+
+```text
+/api/v2/qso          ✅ list
+/api/v2/qso/42       ✅ single item
+/api/v2/qso/         ✅ same as /api/v2/qso
+/api/v2/qso/42/notes ❌ 404 not_found
+```
+
 Depending on your webserver configuration you may be able to omit the `index.php/`
 segment. All examples in this documentation include it for maximum compatibility.
 
@@ -85,6 +96,10 @@ X-API-Key: wl2_your_token_here
     ownership is derived from the token's owner. A token can only ever see and
     modify data belonging to the user it was created for.
 
+    A token created while switched into a clubstation is owned by the *club*,
+    and what it may do additionally depends on the creator's permission level
+    there. See [Clubstations](clubstation.md).
+
 ### Scopes
 
 Permissions are **granular** and follow the pattern `<resource>:<action>`:
@@ -113,6 +128,11 @@ The full set of scopes offered when creating a token is:
 The [Token](token.md) resource (whoami) needs no scope — any valid token may read
 its own metadata.
 
+Scopes are the *only* permission layer for a personal token. A
+[clubstation](clubstation.md) token passes a second one on top: the member's
+permission level on the club. Holding `station:write` does not help if the level
+behind the token is below officer.
+
 ## Request and response conventions
 
 ### HTTP verbs
@@ -133,7 +153,18 @@ its own metadata.
 
 Not every resource implements every verb (for example, [Radio](radio.md) has no
 `PATCH`, and [Statistic](statistic.md) is read-only). An unsupported verb
-returns `405 method_not_allowed`.
+returns `405 method_not_allowed` together with an `Allow` header listing exactly
+the verbs that resource does implement:
+
+```http
+HTTP/1.1 405 Method Not Allowed
+Allow: GET, POST, PATCH, DELETE
+```
+
+The verb is checked **before** the scope, so a `POST` to a read-only resource is
+a `405` and not a `403`: the scope it would need (`lookup:write`) does not exist
+and no token can ever hold it, so reporting a missing scope would point at the
+wrong problem.
 
 ### Request bodies
 
@@ -209,11 +240,20 @@ Errors use an `error` envelope and a matching HTTP status code:
 | 401 | `token_expired` | The token's expiry date has passed |
 | 403 | `insufficient_scope` | The token lacks the scope the verb requires |
 | 403 | `forbidden` | The referenced item does not belong to the token owner |
-| 404 | `not_found` | Unknown resource, or item id not found / not owned |
+| 403 | `insufficient_club_permission` | [Clubstation](clubstation.md) token whose permission level is too low (see `details.required_level`) |
+| 403 | `club_access_revoked` | The [clubstation](clubstation.md) membership behind the token has been withdrawn |
+| 404 | `not_found` | Unknown resource, path or item id — see the note below |
 | 405 | `method_not_allowed` | Verb not supported by this resource (see `Allow` header) |
 | 409 | `conflict` | Duplicate, or a state that forbids the action |
 | 429 | `rate_limited` | [Rate limit](#rate-limiting) exceeded (see `details.retry_after`, in seconds) |
 | 500 | `internal_error` | Unexpected server-side error |
+
+!!! note "`404` also covers items you may not see"
+    An item that exists but is out of reach for your token is reported as
+    `404 not_found`, not `403`. Confirming that a row exists would already leak
+    something about another user's data. This is why a
+    [clubstation](clubstation.md) member gets a `404` for a QSO logged by a
+    different operator.
 
 ### Pagination
 
@@ -379,3 +419,7 @@ See the per-resource pages for the full field reference:
 [QSO](qso.md) · [Station](station.md) · [Radio](radio.md) ·
 [Statistic](statistic.md) · [Lookup](lookup.md) ·
 [Club](club.md) · [Token](token.md).
+
+If your token belongs to a clubstation rather than to your own account, read
+[Clubstations](clubstation.md) as well — the permission level changes what
+several of these resources return.

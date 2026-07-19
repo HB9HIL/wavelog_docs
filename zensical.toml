@@ -160,6 +160,7 @@ nav = [
       "developer/api-v2/lookup.md",
       "developer/api-v2/club.md",
       "developer/api-v2/token.md",
+      "developer/api-v2/clubstation.md",
     ]},
     "developer/development-notes.md",
     "developer/style-guide.md",

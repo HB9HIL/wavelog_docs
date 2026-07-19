@@ -67,7 +67,7 @@ back through `PATCH`.
 
 `POST /api/v2/station`
 
-**Required fields:** `name`, `callsign`.
+**Required fields:** `name`, `callsign`, `dxcc`, `cq`, `itu`.
 
 ```bash
 curl -X POST https://<WAVELOG_URL>/index.php/api/v2/station \
@@ -90,6 +90,8 @@ curl -X POST https://<WAVELOG_URL>/index.php/api/v2/station \
   object in `data`.
 - An identical existing location returns `409 conflict`.
 - An invalid grid locator returns `400 validation_error`.
+- A missing required field returns `400 validation_error`, listing what is
+  missing in `details.missing`.
 
 ### Writable fields
 
@@ -99,9 +101,9 @@ curl -X POST https://<WAVELOG_URL>/index.php/api/v2/station \
 | `callsign` | Station callsign (required on create) |
 | `gridsquare` | Maidenhead locator, validated |
 | `city` | QTH / city |
-| `dxcc` | DXCC entity number |
-| `cq` | CQ zone |
-| `itu` | ITU zone |
+| `dxcc` | DXCC entity number (required on create) |
+| `cq` | CQ zone (required on create) |
+| `itu` | ITU zone (required on create) |
 | `state` | Primary administrative subdivision |
 | `cnty` | Secondary subdivision (county) — see note below |
 | `iota` | IOTA reference |
@@ -141,6 +143,12 @@ curl -X PATCH https://<WAVELOG_URL>/index.php/api/v2/station/1 \
 ```
 
 The updated station object is returned in `data`.
+
+!!! note "Required fields cannot be blanked out"
+    The fields required on create stay required for the lifetime of the
+    location. Sending one of them as `null` or `""` is refused with
+    `400 validation_error` and the offending names in `details.fields`.
+    Leave a field out of the body to keep its stored value.
 
 ## Delete a station location
 

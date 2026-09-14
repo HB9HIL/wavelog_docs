@@ -68,7 +68,7 @@ curl "https://<WAVELOG_URL>/index.php/api/v2/statistic?profile=qso" \
         "confirmed_paper": 6,
         "confirmed_lotw": 7,
         "available": 340,
-        "deleted": { "worked": 1, "confirmed_paper": 1, "confirmed_lotw": 0 }
+        "deleted": { "worked": 1, "confirmed": 1, "confirmed_paper": 1, "confirmed_lotw": 0 }
       }
     }
   },

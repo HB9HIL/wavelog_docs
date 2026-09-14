@@ -34,6 +34,14 @@ another user is treated as *not found*.
 List endpoints are not paginated — users typically have only a handful of station
 locations.
 
+!!! note "The listing follows your account option"
+    If **Only show station locations linked to active logbook** is enabled in your
+    account settings (*Station Location Options*), `GET /api/v2/station` returns
+    only the locations linked to your active logbook — the same subset the web UI
+    and [API v1](../api.md#apistation_info) show. It is a listing preference, not a
+    permission: `GET /api/v2/station/{id}`, `PATCH` and `DELETE` keep working on
+    every location you own, listed or not.
+
 ## The station object
 
 ```json

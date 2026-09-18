@@ -340,6 +340,11 @@ server {
         try_files $uri $uri/ /index.php?$query_string;
     }
     
+    # tiles endpoint fallback
+    location ^~ /tiles/ {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
     # deny access to hidden files
     location ~ /\. {
         deny all;

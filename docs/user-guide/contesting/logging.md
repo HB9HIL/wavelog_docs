@@ -42,6 +42,10 @@ While you type a callsign, Wavelog looks up the DXCC entity and — if callbook 
 
 If the callsign was already logged in this session, a red badge appears below the callsign field showing the time of the previous QSO. The QSO can still be saved; the warning is informational only.
 
+**Quick QSY:**
+
+When the Radio component uses **WebSocket (Real-time)** or **CAT radio** as source (not Manual), you can QSY the radio directly from the callsign field: type a number in kHz instead of a callsign and press `Tab`, `Space` or `Enter`. Depending on whether the number is a full in-band frequency or an offset to the current frequency, the radio changes band or moves within the current band. See [Quick QSY](../logbook/logging.md#quick-qsy) for details and examples.
+
 **Recent QSOs list:**
 
 Below the entry form, a scrollable table shows all QSOs logged in the session, most recent first. In a club station, an Operator column shows which operator logged each QSO.
@@ -136,6 +140,8 @@ The red **End Session** button closes the logging engine and returns you to the 
 | `Escape` | Clear the entry form |
 | `Space` | Jump from the callsign field to the first empty exchange field |
 | `Tab` | Move to the next active exchange field in the configured order |
+
+If the callsign field contains a numeric entry (digits only), `Enter`, `Space` and `Tab` trigger a [Quick QSY](../logbook/logging.md#quick-qsy) instead of their regular actions.
 
 ### QSO List (inline edit)
 

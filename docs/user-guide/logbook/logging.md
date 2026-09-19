@@ -17,6 +17,23 @@ Below the map, the few previous contacts from your logbook are displayed. By def
 
 <img src="https://github.com/wavelog/wavelog/assets/13950650/b74b1e7a-014a-4f53-abe2-35d33265e89d" alt="QSO data entry form">
 
+### Quick QSY
+
+!!! note "New in Wavelog 3.2.3"
+
+With an active CAT connection (WebSocket or polling), you can change the frequency of your radio directly from the callsign field: type a number instead of a callsign and press `Tab`, `Space` or `Enter`.
+
+The entry is interpreted in kHz and Wavelog understands it in two ways:
+
+- **Offset entry** — if the number does not fall into an amateur band by itself, it is added to the integer-MHz part of the current frequency. On 7100 kHz, entering `134` QSYs to 7134 kHz, `34.5` to 7034.5 kHz. On 14230 kHz, entering `155` QSYs to 14155 kHz. This only works if the resulting frequency stays within the current band.
+- **Full-frequency entry** — if the number itself is a frequency within an amateur band, the radio QSYs there, even across bands. On 7135 kHz, entering `14200` switches to 14.200 MHz.
+
+Both dot and comma are accepted as decimal separator (`34.5` and `34,5` are equivalent).
+
+After the QSY, the callsign field is cleared and the focus is returned to it. The frequency, band and mode displays follow the radio automatically, just like a VFO QSY. The current mode is kept; if no mode is set, LSB is used below 10 MHz and USB above.
+
+The same feature is available in the [Contest Logging Engine](../contesting/logging.md#qso-logger).
+
 ### Date and time entry
 
 While post-logging a QSO there is a shortcut for entering date and time: You can enter the date as "202109902" and it is automatically re-formatted to be "2021-09-02". Same goes for time. You can enter the time as "1413" and it is re-formatted to "14:13".

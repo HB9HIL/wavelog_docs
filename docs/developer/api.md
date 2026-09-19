@@ -235,6 +235,9 @@ Returns the active profile stats that would show on the dashboard
 
 Returns information about stations (logbook locations) belonging to the user who has the corresponding API key:
 
+!!! note
+    If the key owner has **Only show station locations linked to active logbook** enabled in their account settings (*Station Location Options*), only the locations linked to their active logbook are returned.
+
 ```json
 [
   {

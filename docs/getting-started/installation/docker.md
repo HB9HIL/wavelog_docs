@@ -153,7 +153,7 @@ For more detail, raise the `log_threshold` value in `config.php` (see above). Ap
 
 ### Cronjobs
 
-The cron manager is enabled by default in the Docker image. Jobs can be managed in the web UI under **Admin → Cron Manager** — no manual crontab setup required.
+The cron manager is enabled by default in the Docker image. Jobs can be managed in the web UI under **Admin → Cron Manager** — no manual crontab setup required. If you don't want the container to run cron at all, set the environment variable `DISABLE_CRON=true` (see [Optional Configuration](#optional-configuration-since-v251)).
 
 ## Optional Configuration (since v2.5.1)
 
@@ -167,3 +167,4 @@ In case you see the need to change some of the carefully chosen default settings
 | `PHP_POST_MAX_SIZE` | Override the default PHP post max size. | `64M` |
 | `PUID` | Set the file owner for files inside the container. | `999` |
 | `PGID` | Set the group owner for files inside the container. If only one of `PUID` or `PGID` is set, the other will default to `www-data` which is `33`. | `33` |
+| `DISABLE_CRON` | Set to `true` to not start the cron daemon inside the container, e.g. if you run the cronjobs externally or on a separate container. | `false` |

@@ -6,12 +6,12 @@ Once the Worker is running, you need to tell Wavelog where to find it. This page
 
 - The Worker is running and reachable (see [Installation](installation.md))
 - You have the `worker_secret` value you set in the Worker's `config.yaml`
-- You know the Worker's internal API URL (e.g. `http://localhost:9001` or `http://wavelog-worker:9001`)
+- You know the Worker's internal API URL (e.g. `http://localhost:9001` or `http://wavelog-worker:9001`). For a [cluster](clustering.md) this is the URL of your load balancer or Kubernetes service in front of the workers, one URL is enough.
 - You know the Worker's public WebSocket URL (e.g. `wss://your-domain.example/worker`)
 
 ## Wavelog Configuration
 
-Create a new file `config/worker.php` based on `config/worker.sample.php` and fill in the required values:
+Create a new file `application/config/worker.php` based on `application/config/worker.sample.php` and fill in the required values:
 
 ```php
 <?php
@@ -30,18 +30,13 @@ Create a new file `config/worker.php` based on `config/worker.sample.php` and fi
 // Enable or disable the Worker integration entirely.
 $config['worker_enabled'] = true;
 
-// Optional VIP/load-balancer URL shown as a connectivity check in the debug page.
-// Leave empty for single-instance setups.
-$config['worker_vip'] = '';
-
-// Internal URLs of wavelog_worker instances (PHP -> Worker, HTTP).
-// Single instance: one entry. Cluster: one entry per node.
-// PHP publishes to the first entry; the debug page shows status of all nodes.
-// Keep in Mind: If you enter more than one worker url, it means you run a cluster. In this case you need 
-// a Redis / Valkey instance. More info you can find in the wavelog_worker sample config.yaml.
-$config['worker_urls'] = [
-    'http://127.0.0.1:9001',
-];
+// Internal URL of the Worker (PHP -> Worker, HTTP).
+// Single instance: the URL of your worker.
+// Cluster: the URL of your load balancer / k8s service in front of the workers.
+// The cluster nodes are discovered automatically (Worker 0.3.0 or newer), so
+// one URL is enough. A cluster needs a Redis / Valkey instance, see the
+// wavelog_worker sample config.yaml.
+$config['worker_url'] = 'http://127.0.0.1:9001';
 
 // Shared secret — must match worker_secret in the worker's config.yaml.
 // Generate with: openssl rand -hex 32
@@ -65,6 +60,24 @@ $config['worker_client_url'] = 'ws://log.example.org:9000';
     ```php
     $config['worker_url'] = 'http://wavelog-worker:9001';
     ```
+
+## Upgrading to `worker_url`
+
+Older Wavelog versions used two keys for the worker address: `worker_vip` (a load balancer URL) and `worker_urls` (a list with one entry per worker node, which the debug page polled one by one). Since Worker 0.3.0 the nodes announce themselves in Redis and any node reports the whole cluster, so Wavelog only needs **one** URL. That URL is the new key `worker_url`.
+
+What to change in `application/config/worker.php`:
+
+| You have | Set |
+|---|---|
+| a single worker, `worker_urls = ['http://host:9001']` | `$config['worker_url'] = 'http://host:9001';` |
+| a cluster with `worker_vip` set | `$config['worker_url'] = <your worker_vip>;` |
+| a cluster without `worker_vip`, several `worker_urls` | `$config['worker_url'] = <load balancer / service URL, or any one node>;` |
+
+Then remove `worker_vip` and `worker_urls`.
+
+- **Nothing breaks if you do not change anything.** `worker_vip` and `worker_urls` are still read when `worker_url` is empty, but they are deprecated and will be removed in **Wavelog 1.0.0**. Until then the debug page shows a reminder.
+- With a Worker **older than 0.3.0** the per-node overview on the debug page still relies on `worker_urls` listing every node. Update the Worker first, then switch to `worker_url`.
+- The debug page keeps showing the node count and a "Degraded" badge as before; it now gets that information from the Worker instead of polling every node. See [Clustering → Node Lifecycle](clustering.md#node-lifecycle) for what "Degraded" means.
 
 ## How the Integration Works
 
@@ -162,21 +175,38 @@ curl -s -H "X-Worker-Secret: your-secret" http://localhost:9001/internal/status
 ```json
 {
   "status": "ok",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "uptime": "14m22s",
   "registered_topics": 2,
   "active_topics": 2,
   "connected_clients": 5,
-  "topic_list": ["session:abc123", "session:def456"],
-  "cluster_nodes": -1
+  "connected_sockets": 6,
+  "cluster_nodes": -1,
+  "nodes": [
+    {
+      "id": "3f9c2a1b7d4e6f80",
+      "name": "logbook-host",
+      "version": "0.3.0",
+      "started_at": "2026-09-21T08:00:00Z",
+      "seen_at": "2026-09-21T08:14:22Z",
+      "active_topics": 2,
+      "connected_clients": 5,
+      "connected_sockets": 6,
+      "alive": true,
+      "uptime": "14m22s",
+      "uptime_seconds": 862
+    }
+  ]
 }
 ```
+
+Add `?topics=1` to include `topic_list` and `active_topic_list`. `nodes` lists every cluster member (just this worker in single-instance mode), see [Clustering](clustering.md#verifying-cluster-mode).
 
 ## Troubleshooting
 
 ### Browsers cannot connect / WebSocket fails
 
-- Check that the WebSocket URL (`worker_ws_url`) is correct and uses `wss://` for HTTPS sites.
+- Check that the WebSocket URL (`worker_client_url`) is correct and uses `wss://` for HTTPS sites.
 - Verify your reverse proxy passes `Upgrade: websocket` headers (see [Installation → Reverse Proxy](installation.md#reverse-proxy-https-wss)).
 
 ### PHP cannot reach the internal API

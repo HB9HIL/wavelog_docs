@@ -61,17 +61,18 @@ A healthy response looks like this:
 ```json
 {
   "status": "ok",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "uptime": "2m30s",
   "registered_topics": 0,
   "active_topics": 0,
   "connected_clients": 0,
-  "topic_list": [],
-  "cluster_nodes": -1
+  "connected_sockets": 0,
+  "cluster_nodes": -1,
+  "nodes": [ { "name": "myhost", "alive": true, "...": "..." } ]
 }
 ```
 
-`cluster_nodes: -1` means single-instance mode (no Redis). That is expected.
+`cluster_nodes: -1` means single-instance mode (no Redis). That is expected. `nodes` then contains just this worker.
 
 ---
 
@@ -96,6 +97,22 @@ services:
 ```
 
 With this setup Wavelog's PHP can reach the Worker at `http://wavelog-worker:9001` — use that as the internal URL in the [Wavelog configuration](wavelog-integration.md).
+
+!!! tip "No config file needed"
+    Instead of mounting `config.yaml` you can pass everything as environment variables:
+
+    ```yaml
+      wavelog-worker:
+        image: ghcr.io/wavelog/wavelog_worker:latest
+        restart: unless-stopped
+        ports:
+          - "9000:9000"
+        environment:
+          WORKER_INTERNAL_BIND: "0.0.0.0"
+          WORKER_SECRET: "${WORKER_SECRET}"
+    ```
+
+    See [Configuration → Environment Variables](configuration.md#environment-variables) for the full list.
 
 ---
 

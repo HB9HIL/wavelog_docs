@@ -213,18 +213,30 @@ status, cache and process statistics.
       "cache": {},
       "worker": {
         "enabled": true,
-        "client_url": null,
-        "nodes": [],
-        "nodes_alive": 0,
-        "nodes_total": 0,
-        "active_topics": 0,
-        "connected_clients": 0
+        "client_url": "wss://log.example.org/ws",
+        "nodes": [
+          { "name": "worker-1", "url": null, "alive": true,  "version": "0.3.0", "active_topics": 2, "connected_clients": 5, "uptime": "3h22m0s" },
+          { "name": "worker-2", "url": null, "alive": false, "version": "0.3.0", "active_topics": 1, "connected_clients": 3, "uptime": "1h02m11s" }
+        ],
+        "nodes_alive": 1,
+        "nodes_total": 2,
+        "active_topics": 2,
+        "connected_clients": 5
       }
     }
   },
   "meta": { "profile": "system", "admin": true }
 }
 ```
+
+`worker` is `{ "enabled": false }` when the Worker integration is off. Otherwise:
+
+| Field | Meaning |
+|---|---|
+| `nodes[]` | One entry per Worker node. With Worker 0.3.0+ the list is the cluster roster reported by the Worker itself (`name` = hostname, `url` = `null`). With older Workers, or while Redis is unreachable, Wavelog polls every configured URL instead (`name` = `url` = the polled URL). |
+| `nodes[].alive` | Roster: heartbeat younger than 15 s. Polling: HTTP 200 from `/internal/status`. A crashed node stays listed as `alive: false` for 15 minutes. |
+| `nodes_total` / `nodes_alive` | Size of `nodes[]` and how many are alive. `nodes_alive < nodes_total` is what the debug page shows as "Degraded". |
+| `active_topics` / `connected_clients` | Sum over the alive nodes, `null` if no node answered. |
 
 ### `full`
 

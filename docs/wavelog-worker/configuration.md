@@ -1,6 +1,6 @@
 # Configuration Reference
 
-The Worker is configured through a single YAML file, passed via the `--config` flag (default: `config.yaml` in the working directory).
+The Worker is configured through a single YAML file, passed via the `--config` flag (default: `config.yaml` in the working directory), or through `WORKER_*` environment variables (see [Environment Variables](#environment-variables)). Both can be combined: environment variables override the file, and the file may be missing entirely.
 
 ## Full Example
 
@@ -119,7 +119,7 @@ openssl rand -hex 32
 | **Default** | *(empty — single-instance mode)* |
 | **Required** | No |
 
-A Redis connection URL. When set, the Worker uses Redis Pub/Sub to synchronize broadcast events across multiple Worker instances.
+A Redis connection URL. When set, the Worker uses Redis Pub/Sub to synchronize broadcast events across multiple Worker instances, and announces itself in Redis so Wavelog only needs one worker URL. The node name shown in Wavelog is the hostname (set `hostname:` in Docker Compose; in Kubernetes it is the pod name).
 
 ```yaml
 redis_url: "redis://localhost:6379/2"
@@ -137,6 +137,39 @@ Use a dedicated Redis database (e.g. `/2`) to avoid key collisions with other ap
 When `redis_url` is empty or omitted, the Worker runs in **single-instance mode**: all state is in-memory and lost on restart. Topics are automatically re-registered by Wavelog on the next page load.
 
 See [Clustering](clustering.md) for when and how to use Redis.
+
+---
+
+## Environment Variables
+
+Every option can also be set through an environment variable. This is the natural way in Docker and Kubernetes: no config file to mount, the secret comes from a Docker/Kubernetes secret.
+
+| Variable | Config option |
+|---|---|
+| `WORKER_WS_BIND` | `ws_bind` |
+| `WORKER_WS_PORT` | `ws_port` |
+| `WORKER_INTERNAL_BIND` | `internal_bind` |
+| `WORKER_INTERNAL_PORT` | `internal_port` |
+| `WORKER_SECRET` | `worker_secret` |
+| `WORKER_REDIS_URL` | `redis_url` |
+| `WORKER_TOPIC_TTL` | `topic_ttl` |
+
+Rules:
+
+- A set, non-empty variable **overrides** the value from `config.yaml`. Empty variables are ignored.
+- If the config file does not exist, the Worker starts from the defaults plus the environment. The log then says `config: config.yaml not found, using WORKER_* environment variables only`. Any other problem with the file (unreadable, invalid YAML) is still an error.
+- `worker_secret` / `WORKER_SECRET` must be at least 32 characters, from whichever source.
+
+Docker Compose example without a config file:
+
+```yaml
+wavelog-worker:
+  image: ghcr.io/wavelog/wavelog_worker:latest
+  environment:
+    WORKER_INTERNAL_BIND: "0.0.0.0"
+    WORKER_SECRET: "${WORKER_SECRET}"          # from .env or a secret
+    WORKER_REDIS_URL: "redis://wavelog-cache:6379/2"
+```
 
 ---
 

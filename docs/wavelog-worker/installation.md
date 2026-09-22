@@ -61,17 +61,18 @@ A healthy response looks like this:
 ```json
 {
   "status": "ok",
-  "version": "1.0.0",
+  "version": "0.3.0",
   "uptime": "2m30s",
   "registered_topics": 0,
   "active_topics": 0,
   "connected_clients": 0,
-  "topic_list": [],
-  "cluster_nodes": -1
+  "connected_sockets": 0,
+  "cluster_nodes": -1,
+  "nodes": [ { "name": "myhost", "alive": true, "...": "..." } ]
 }
 ```
 
-`cluster_nodes: -1` means single-instance mode (no Redis). That is expected.
+`cluster_nodes: -1` means single-instance mode (no Redis). That is expected. `nodes` then contains just this worker.
 
 ---
 

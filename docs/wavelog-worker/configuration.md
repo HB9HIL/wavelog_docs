@@ -119,7 +119,7 @@ openssl rand -hex 32
 | **Default** | *(empty — single-instance mode)* |
 | **Required** | No |
 
-A Redis connection URL. When set, the Worker uses Redis Pub/Sub to synchronize broadcast events across multiple Worker instances.
+A Redis connection URL. When set, the Worker uses Redis Pub/Sub to synchronize broadcast events across multiple Worker instances, and announces itself in Redis so Wavelog only needs one worker URL. The node name shown in Wavelog is the hostname (set `hostname:` in Docker Compose; in Kubernetes it is the pod name).
 
 ```yaml
 redis_url: "redis://localhost:6379/2"

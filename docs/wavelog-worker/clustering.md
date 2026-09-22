@@ -19,6 +19,7 @@ When `redis_url` is configured, each Worker instance:
 1. **Publishes** broadcast events to a shared Redis Pub/Sub channel (`wavelog:events`)
 2. **Subscribes** to that channel and forwards incoming events to its local clients
 3. **Stores** topic registrations in Redis (with a 24-hour TTL) so all nodes share the same registry
+4. **Announces** itself in the Redis hash `wavelog:nodes` with a heartbeat every 5 seconds (Worker 0.3.0+). Any node can therefore report the whole cluster, and Wavelog only needs a single `worker_url` instead of a list of all nodes. The node name is the hostname (the pod name in Kubernetes).
 
 This means a publish arriving at **any** node is instantly forwarded to clients on **all** nodes — regardless of which instance they connected to.
 
@@ -104,7 +105,10 @@ services:
 
   wavelog-worker-1:
     image: ghcr.io/wavelog/wavelog_worker:latest
+    hostname: worker-1
     restart: unless-stopped
+    depends_on:
+      - redis
     ports:
       - "9000:9000"
     volumes:
@@ -112,18 +116,70 @@ services:
 
   wavelog-worker-2:
     image: ghcr.io/wavelog/wavelog_worker:latest
+    hostname: worker-2
     restart: unless-stopped
+    depends_on:
+      - redis
     ports:
       - "9002:9000"
     volumes:
       - ./worker/config.yaml:/app/config.yaml:ro
 ```
 
-With `redis_url: "redis://redis:6379/2"` in `config.yaml`, both instances share state through the Redis container.
+With `redis_url: "redis://redis:6379/2"` in `config.yaml`, both instances share state through the Redis container. `hostname:` gives the nodes readable names on the Wavelog debug page; without it you see the container ID.
+
+In Wavelog's `worker.php` one URL is enough, for example `$config['worker_url'] = 'http://wavelog-worker-1:9001';` (or a load balancer in front of port 9001).
+
+#### Kubernetes
+
+Because the nodes discover each other through Redis, a plain `Deployment` with any number of replicas works. No StatefulSet, no headless service, no per-pod URLs.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wavelog-worker
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  selector:
+    matchLabels: { app: wavelog-worker }
+  template:
+    metadata:
+      labels: { app: wavelog-worker }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/wavelog/wavelog_worker:latest
+          ports:
+            - { name: ws, containerPort: 9000 }
+            - { name: internal, containerPort: 9001 }
+          readinessProbe:
+            httpGet: { path: /readyz, port: internal }
+          volumeMounts:
+            - { name: config, mountPath: /app/config.yaml, subPath: config.yaml, readOnly: true }
+      volumes:
+        - name: config
+          secret: { secretName: wavelog-worker }   # contains config.yaml with worker_secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wavelog-worker
+spec:
+  selector: { app: wavelog-worker }
+  ports:
+    - { name: ws, port: 9000, targetPort: ws }
+    - { name: internal, port: 9001, targetPort: internal }
+```
+
+The worker's `config.yaml` needs `internal_bind: "0.0.0.0"` and `redis_url` pointing at your Redis/Valkey service. In Wavelog set `$config['worker_url'] = 'http://wavelog-worker:9001';` and route the browser WebSocket (`/ws`) to port 9000 of the same service through your ingress. Scaling the deployment up or down is reflected on the Wavelog debug page within a few seconds.
 
 ## Verifying Cluster Mode
 
-The `/internal/status` endpoint reports the number of active cluster nodes:
+The `/internal/status` endpoint of **any** node reports the whole cluster:
 
 ```bash
 curl -s -H "X-Worker-Secret: your-secret" http://localhost:9001/internal/status
@@ -133,21 +189,39 @@ curl -s -H "X-Worker-Secret: your-secret" http://localhost:9001/internal/status
 {
   "status": "ok",
   "cluster_nodes": 3,
+  "nodes": [
+    { "id": "3f9c2a1b7d4e6f80", "name": "worker-1", "version": "0.3.0", "alive": true,  "uptime": "3h22m0s", "active_topics": 2, "connected_clients": 5, "connected_sockets": 6, "...": "..." },
+    { "id": "8a1d0c4e2b6f9e13", "name": "worker-2", "version": "0.3.0", "alive": true,  "uptime": "3h21m58s", "...": "..." },
+    { "id": "c72e5b9a0d1f4e88", "name": "worker-3", "version": "0.3.0", "alive": false, "uptime": "1h02m11s", "...": "..." }
+  ],
   ...
 }
 ```
 
-`cluster_nodes` equals the number of Worker instances currently subscribed to the Redis Pub/Sub channel. A value of `-1` means single-instance mode (no Redis configured).
+- `nodes` is the cluster roster from Redis: one entry per Worker instance, sorted by name. `alive` is `true` while the node's heartbeat is younger than 15 seconds. `null` means Redis is currently unreachable.
+- `cluster_nodes` is the number of instances currently subscribed to the Redis Pub/Sub channel (a live count without grace window). `-1` means single-instance mode (no Redis configured).
 
-## Fallback Behaviour
+## Node Lifecycle
 
-If Redis is configured but **unavailable** at startup, the Worker logs a warning and falls back to single-instance mode automatically:
+| Event | Effect on `nodes` | Wavelog debug page |
+|---|---|---|
+| Node starts | Entry appears within 5 s | node count goes up |
+| Clean stop (SIGTERM, `docker stop`, scale-down, rolling update) | Entry removed immediately | count goes down, never "Degraded" |
+| Crash (SIGKILL, OOM, host lost) | Entry stays with `alive: false` for 15 minutes, then is forgotten | "2/3 Degraded" for up to 15 minutes, then "2/2" |
+| Node returns under the same hostname | Dead entry replaced immediately | back to normal at once |
+
+So "Degraded" on the debug page means a node disappeared without saying goodbye. If that was intentional (you killed it), it clears itself after 15 minutes.
+
+## Redis Unavailable
+
+If Redis is configured but **unreachable** at startup or lost later, the Worker keeps running and serving its own WebSocket clients, retries the connection with backoff (1 s to 30 s) and resumes cluster mode on its own once Redis is back:
 
 ```text
-cluster: redis unavailable, falling back to single-instance: dial tcp ...
+cluster: redis lost, retrying: dial tcp ...
+cluster: redis connected
 ```
 
-The Worker still starts and serves WebSocket connections — it simply cannot synchronise events across other instances until Redis becomes available again (which requires a restart).
+While disconnected, `GET :9001/readyz` returns `503` so a Kubernetes readiness probe or load balancer health check keeps traffic away from the node, events are not synchronised with the other instances, and `nodes` in `/internal/status` is `null` (Wavelog then falls back to polling the URLs it has configured). No restart is needed.
 
 ## Topic Registry and Restarts
 

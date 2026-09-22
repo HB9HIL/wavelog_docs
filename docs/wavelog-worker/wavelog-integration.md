@@ -75,7 +75,7 @@ What to change in `application/config/worker.php`:
 
 Then remove `worker_vip` and `worker_urls`.
 
-- **Nothing breaks if you do not change anything.** `worker_vip` and `worker_urls` are still read when `worker_url` is empty, but they are deprecated and will be removed in **Wavelog 1.0.0**. Until then the debug page shows a reminder.
+- **Nothing breaks if you do not change anything.** `worker_vip` and `worker_urls` are still read when `worker_url` is empty, but they are deprecated and will be removed in **Wavelog Worker Version 1.0.0**. Until then the debug page shows a reminder.
 - With a Worker **older than 0.3.0** the per-node overview on the debug page still relies on `worker_urls` listing every node. Update the Worker first, then switch to `worker_url`.
 - The debug page keeps showing the node count and a "Degraded" badge as before; it now gets that information from the Worker instead of polling every node. See [Clustering → Node Lifecycle](clustering.md#node-lifecycle) for what "Degraded" means.
 

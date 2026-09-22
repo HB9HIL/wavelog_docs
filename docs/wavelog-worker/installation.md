@@ -98,6 +98,22 @@ services:
 
 With this setup Wavelog's PHP can reach the Worker at `http://wavelog-worker:9001` — use that as the internal URL in the [Wavelog configuration](wavelog-integration.md).
 
+!!! tip "No config file needed"
+    Instead of mounting `config.yaml` you can pass everything as environment variables:
+
+    ```yaml
+      wavelog-worker:
+        image: ghcr.io/wavelog/wavelog_worker:latest
+        restart: unless-stopped
+        ports:
+          - "9000:9000"
+        environment:
+          WORKER_INTERNAL_BIND: "0.0.0.0"
+          WORKER_SECRET: "${WORKER_SECRET}"
+    ```
+
+    See [Configuration → Environment Variables](configuration.md#environment-variables) for the full list.
+
 ---
 
 ## Reverse Proxy (HTTPS / WSS)
